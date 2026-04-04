@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>You Do Not Walk Alone</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Cinzel:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --gold: #c9a96e;
+    --gold-light: #e8d5a3;
+    --deep: #0d1117;
+    --ink: #1a1f2e;
+    --mist: #8fa3b8;
+    --cream: #f5ede0;
+  }
+
+  body {
+    background: var(--deep);
+    color: var(--cream);
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Sky canvas ── */
+  .scene {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  canvas#sky {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+  }
+
+  /* ── Figure silhouette (SVG inline) ── */
+  .silhouette {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    width: min(420px, 80vw);
+    animation: breathe 8s ease-in-out infinite;
+  }
+
+  @keyframes breathe {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50%       { transform: translateX(-50%) translateY(-6px); }
+  }
+
+  /* ── Poem card ── */
+  .card {
+    position: relative;
+    z-index: 3;
+    max-width: 560px;
+    width: 90vw;
+    background: rgba(13, 17, 23, 0.72);
+    border: 1px solid rgba(201, 169, 110, 0.35);
+    border-radius: 2px;
+    padding: 3rem 2.8rem 2.6rem;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 0 80px rgba(0,0,0,0.7), inset 0 1px 0 rgba(201,169,110,0.15);
+    animation: fadeUp 2s ease forwards;
+    opacity: 0;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(28px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* decorative rule */
+  .card::before {
+    content: '';
+    display: block;
+    width: 60px;
+    height: 1px;
+    background: var(--gold);
+    margin: 0 auto 1.6rem;
+    opacity: 0.7;
+  }
+
+  .subtitle {
+    font-family: 'Cinzel', serif;
+    font-size: 0.62rem;
+    letter-spacing: 0.22em;
+    color: var(--gold);
+    text-align: center;
+    text-transform: uppercase;
+    margin-bottom: 0.6rem;
+    opacity: 0.85;
+  }
+
+  h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 300;
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    text-align: center;
+    color: var(--gold-light);
+    line-height: 1.25;
+    margin-bottom: 2rem;
+    letter-spacing: 0.04em;
+  }
+
+  .poem {
+    font-style: italic;
+    font-weight: 300;
+    font-size: clamp(0.92rem, 2.2vw, 1.05rem);
+    line-height: 2;
+    color: #ddd5c8;
+    text-align: center;
+  }
+
+  .poem .line { display: block; }
+
+  .poem .stanza { margin-bottom: 1.4em; }
+
+  .poem .highlight {
+    color: var(--gold-light);
+    font-style: normal;
+    font-weight: 400;
+  }
+
+  .card::after {
+    content: '';
+    display: block;
+    width: 60px;
+    height: 1px;
+    background: var(--gold);
+    margin: 1.8rem auto 0;
+    opacity: 0.7;
+  }
+
+  /* ── Lark birds ── */
+  .birds {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .bird {
+    position: absolute;
+    opacity: 0;
+    animation: fly linear infinite;
+  }
+
+  @keyframes fly {
+    0%   { opacity: 0; transform: translate(0, 0) scale(0.6); }
+    10%  { opacity: 0.7; }
+    90%  { opacity: 0.5; }
+    100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1); }
+  }
+
+  /* ── Responsive layout ── */
+  @media (max-width: 520px) {
+    .card { padding: 2rem 1.6rem 1.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="scene">
+  <!-- animated sky -->
+  <canvas id="sky"></canvas>
+
+  <!-- birds -->
+  <div class="birds" id="birds"></div>
+
+  <!-- silhouette figure walking a path -->
+  <svg class="silhouette" viewBox="0 0 420 340" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <!-- ground / path -->
+    <ellipse cx="210" cy="320" rx="180" ry="18" fill="rgba(0,0,0,0.45)"/>
+    <path d="M130 320 Q210 260 290 320" stroke="rgba(201,169,110,0.18)" stroke-width="2" fill="none"/>
+    <!-- distant hills -->
+    <path d="M0 300 Q60 240 120 270 Q180 230 240 265 Q310 220 380 260 L420 300 Z" fill="rgba(20,30,45,0.9)"/>
+    <path d="M0 310 Q80 280 160 295 Q240 270 320 288 L420 310 Z" fill="rgba(13,17,23,0.95)"/>
+    <!-- figure -->
+    <!-- body -->
+    <rect x="198" y="200" width="24" height="70" rx="10" fill="#1a2030"/>
+    <!-- head -->
+    <circle cx="210" cy="190" r="16" fill="#1a2030"/>
+    <!-- walking staff -->
+    <line x1="222" y1="220" x2="240" y2="295" stroke="#c9a96e" stroke-width="2.5" stroke-linecap="round" opacity="0.7"/>
+    <!-- cloak / shadow -->
+    <path d="M193 220 Q175 265 180 295 Q200 285 210 270 Q220 285 240 295 Q245 265 227 220 Z" fill="rgba(15,22,38,0.85)"/>
+    <!-- light aura around figure -->
+    <circle cx="210" cy="220" r="55" fill="url(#aura)" />
+    <defs>
+      <radialGradient id="aura" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="rgba(201,169,110,0.12)"/>
+        <stop offset="100%" stop-color="rgba(201,169,110,0)"/>
+      </radialGradient>
+    </defs>
+  </svg>
+
+  <!-- poem card -->
+  <div class="card" role="main">
+    <p class="subtitle">Traditional Irish Blessing</p>
+    <h1>You Do Not Walk Alone</h1>
+    <div class="poem">
+      <div class="stanza">
+        <span class="line">May you see God's light on the path ahead</span>
+        <span class="line">when the road you walk is dark.</span>
+      </div>
+      <div class="stanza">
+        <span class="line">May you always hear, even in your hour of sorrow,</span>
+        <span class="line">the gentle singing of the lark.</span>
+      </div>
+      <div class="stanza">
+        <span class="line">When times are hard may hardness never</span>
+        <span class="line">turn your heart to stone.</span>
+      </div>
+      <div class="stanza">
+        <span class="line">May you always remember when the shadows fall —</span>
+        <span class="line highlight">You do not walk alone.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── Sky: aurora + stars + ray of light ── */
+(function () {
+  const canvas = document.getElementById('sky');
+  const ctx = canvas.getContext('2d');
+  let W, H, stars = [], t = 0;
+
+  function resize() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+    makeStars();
+  }
+
+  function makeStars() {
+    stars = Array.from({ length: 180 }, () => ({
+      x: Math.random() * W,
+      y: Math.random() * H * 0.75,
+      r: Math.random() * 1.4 + 0.3,
+      alpha: Math.random() * 0.6 + 0.2,
+      twinkle: Math.random() * Math.PI * 2,
+      speed: Math.random() * 0.02 + 0.005
+    }));
+  }
+
+  function drawSky() {
+    // deep night gradient
+    const bg = ctx.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0,   '#050b14');
+    bg.addColorStop(0.4, '#0b1525');
+    bg.addColorStop(0.7, '#0f1e30');
+    bg.addColorStop(1,   '#1a2a1a');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+
+    // aurora bands
+    for (let i = 0; i < 3; i++) {
+      const yBase = H * (0.12 + i * 0.08);
+      const hue = 170 + i * 25 + Math.sin(t * 0.3 + i) * 15;
+      const aurora = ctx.createLinearGradient(0, yBase - 60, 0, yBase + 60);
+      aurora.addColorStop(0,   `hsla(${hue},70%,45%,0)`);
+      aurora.addColorStop(0.5, `hsla(${hue},70%,45%,${0.06 + 0.03 * Math.sin(t + i * 2)})`);
+      aurora.addColorStop(1,   `hsla(${hue},70%,45%,0)`);
+      ctx.fillStyle = aurora;
+      ctx.beginPath();
+      ctx.ellipse(W / 2 + Math.sin(t * 0.2 + i) * 80, yBase, W * 0.7, 70, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // god-ray from upper right
+    ctx.save();
+    ctx.globalAlpha = 0.07 + 0.03 * Math.sin(t * 0.4);
+    const ray = ctx.createLinearGradient(W * 0.78, 0, W * 0.35, H * 0.9);
+    ray.addColorStop(0, '#e8d5a3');
+    ray.addColorStop(1, 'rgba(232,213,163,0)');
+    ctx.fillStyle = ray;
+    ctx.beginPath();
+    ctx.moveTo(W * 0.75, 0);
+    ctx.lineTo(W * 0.85, 0);
+    ctx.lineTo(W * 0.5, H);
+    ctx.lineTo(W * 0.3, H);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // horizon glow
+    const horizGlow = ctx.createLinearGradient(0, H * 0.65, 0, H);
+    horizGlow.addColorStop(0, 'rgba(201,169,110,0)');
+    horizGlow.addColorStop(0.5, 'rgba(201,169,110,0.07)');
+    horizGlow.addColorStop(1, 'rgba(30,50,25,0.5)');
+    ctx.fillStyle = horizGlow;
+    ctx.fillRect(0, H * 0.6, W, H * 0.4);
+
+    // stars
+    stars.forEach(s => {
+      s.twinkle += s.speed;
+      const a = s.alpha * (0.6 + 0.4 * Math.sin(s.twinkle));
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(240,230,210,${a})`;
+      ctx.fill();
+    });
+
+    // moon
+    const mx = W * 0.78, my = H * 0.14;
+    const moonGlow = ctx.createRadialGradient(mx, my, 0, mx, my, 70);
+    moonGlow.addColorStop(0, 'rgba(232,218,180,0.18)');
+    moonGlow.addColorStop(1, 'rgba(232,218,180,0)');
+    ctx.fillStyle = moonGlow;
+    ctx.beginPath(); ctx.arc(mx, my, 70, 0, Math.PI*2); ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(mx, my, 22, 0, Math.PI * 2);
+    ctx.fillStyle = '#e8dab4';
+    ctx.fill();
+    // crescent shadow
+    ctx.beginPath();
+    ctx.arc(mx + 8, my - 4, 18, 0, Math.PI * 2);
+    ctx.fillStyle = '#0a1020';
+    ctx.fill();
+  }
+
+  function loop() {
+    t += 0.008;
+    drawSky();
+    requestAnimationFrame(loop);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+  loop();
+})();
+
+/* ── Lark birds ── */
+(function () {
+  const container = document.getElementById('birds');
+  const total = 9;
+
+  function spawnBird() {
+    const el = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    el.setAttribute('viewBox', '0 0 30 14');
+    el.setAttribute('width', '28');
+    el.setAttribute('height', '14');
+    el.innerHTML = `<path d="M1 7 Q7 2 15 7 Q23 2 29 7" stroke="rgba(201,169,110,0.65)" stroke-width="1.5" fill="none" stroke-linecap="round"/>`;
+    el.classList.add('bird');
+
+    const startX = Math.random() * 80 + 5; // vw
+    const startY = Math.random() * 50 + 5; // vh
+    const dx = (Math.random() - 0.5) * 30 + 'vw';
+    const dy = -(Math.random() * 25 + 10) + 'vh';
+    const dur = Math.random() * 8 + 7;
+    const delay = Math.random() * 12;
+
+    el.style.cssText = `left:${startX}vw;top:${startY}vh;--dx:${dx};--dy:${dy};animation-duration:${dur}s;animation-delay:${delay}s`;
+    container.appendChild(el);
+  }
+
+  for (let i = 0; i < total; i++) spawnBird();
+
+  // recycle birds
+  container.querySelectorAll('.bird').forEach(b => {
+    b.addEventListener('animationend', () => {
+      b.remove();
+      spawnBird();
+    });
+  });
+})();
+</script>
+</body>
+</html>
